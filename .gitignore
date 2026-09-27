@@ -1,0 +1,47 @@
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment variable files
+.env
+.env.*
+*.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local run scripts only (not needed in production)
+run.bat
+run_server.py
+
+# Raw training data (55 MB — too large for GitHub, not needed for serving)
+delivery_data.csv
+delhivery_eta_deploy/
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+logs/

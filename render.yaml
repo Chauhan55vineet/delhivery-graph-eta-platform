@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: delhivery-graph-eta
+    env: python
+    region: singapore        # Closest to India (Mumbai is not available on Render free tier)
+    plan: free               # Change to "starter" for always-on production deployment
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ARTIFACT_DIR
+        value: ./artifacts
+      - key: PYTHON_VERSION
+        value: 3.11.0
+    healthCheckPath: /health
