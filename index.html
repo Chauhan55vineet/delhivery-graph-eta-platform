@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delhivery Graph-Enhanced ETA & Network Intelligence Platform</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Vis.js Network for Graph Visualization -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            delhivery: {
+              red: '#E31837',
+              darkred: '#B8132B',
+              black: '#111827',
+              dark: '#0B0F17',
+              card: '#161F2E',
+              border: '#222F43',
+              accent: '#EF4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0b0f17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .metric-badge-breach {
+      background-color: rgba(239, 68, 68, 0.18);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .metric-badge-safe {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .tab-active {
+      border-bottom: 2px solid #E31837;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #111827;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #2a384e;
+      border-radius: 3px;
+    }
+    #network-graph-container {
+      height: 520px;
+      background: #0f172a;
+      border-radius: 0.5rem;
+      border: 1px solid #1e293b;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Top Header Navigation -->
+  <header class="border-b border-delhivery-border bg-delhivery-black/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded bg-delhivery-red flex items-center justify-center font-black text-white text-lg tracking-wider">
+            D
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-white text-base tracking-tight">DELHIVERY</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-red-950/80 text-red-400 font-semibold border border-red-800/40">GRAPH-ETA v1.0</span>
+            </div>
+            <p class="text-xs text-slate-400 hidden sm:block">Network Intelligence & Operational Routing Platform</p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-1 sm:space-x-4">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-2 text-sm font-medium text-slate-300 hover:text-white tab-active flex items-center space-x-1.5">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Dashboard</span>
+          </button>
+          <button onclick="switchTab('predictor')" id="nav-predictor" class="px-3 py-2 text-sm font-medium text-slate-400 hover:text-white flex items-center space-x-1.5">
+            <i data-lucide="calculator" class="w-4 h-4"></i>
+            <span>ETA Predictor</span>
+          </button>
+          <button onclick="switchTab('bottlenecks')" id="nav-bottlenecks" class="px-3 py-2 text-sm font-medium text-slate-400 hover:text-white flex items-center space-x-1.5">
+            <i data-lucide="network" class="w-4 h-4"></i>
+            <span>Bottlenecks & Corridors</span>
+          </button>
+          <button onclick="switchTab('advisor')" id="nav-advisor" class="px-3 py-2 text-sm font-medium text-slate-400 hover:text-white flex items-center space-x-1.5">
+            <i data-lucide="truck" class="w-4 h-4"></i>
+            <span>FTL vs Carting</span>
+          </button>
+          <button onclick="switchTab('reports')" id="nav-reports" class="px-3 py-2 text-sm font-medium text-slate-400 hover:text-white flex items-center space-x-1.5">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span>Strategy Memo</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Freshness Banner (Screen 1 & Global) -->
+    <div id="freshness-banner" class="mb-6 p-3.5 rounded-lg border bg-delhivery-card/70 border-delhivery-border flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+      <div class="flex items-center space-x-2.5">
+        <span id="freshness-pulse" class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-slate-300">Model Freshness:</span>
+        <span id="freshness-text" class="font-mono text-white font-medium">Loading training metadata...</span>
+      </div>
+      <div id="freshness-badge" class="flex items-center space-x-2">
+        <span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/40">Model Healthy</span>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SCREEN 1: DASHBOARD -->
+    <!-- ================================================================= -->
+    <section id="screen-dashboard" class="space-y-6">
+      <!-- 4 KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- KPI 1 -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Model MAE</span>
+            <i data-lucide="target" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpi-mae" class="text-3xl font-extrabold text-white">33.6</span>
+            <span class="text-sm font-medium text-slate-400">min</span>
+          </div>
+          <div class="mt-2 text-xs flex items-center text-emerald-400">
+            <i data-lucide="trending-down" class="w-3.5 h-3.5 mr-1"></i>
+            <span>-29.8% vs OSRM baseline (47.9 min)</span>
+          </div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Within 15% of Actual</span>
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpi-within15" class="text-3xl font-extrabold text-white">43.9%</span>
+          </div>
+          <div class="mt-2 text-xs flex items-center text-emerald-400">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5 mr-1"></i>
+            <span>+15.3% gain over OSRM (28.6%)</span>
+          </div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Chronic Delay Corridors</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-delhivery-accent"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpi-chronic" class="text-3xl font-extrabold text-delhivery-accent">2,480</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded metric-badge-breach">Ratio &gt; 1.20</span>
+          </div>
+          <div class="mt-2 text-xs text-slate-400">
+            <span>Identified structural friction points</span>
+          </div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+          <div class="flex items-center justify-between text-slate-400 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Facilities Monitored</span>
+            <i data-lucide="building-2" class="w-4 h-4 text-blue-400"></i>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span id="kpi-facilities" class="text-3xl font-extrabold text-white">1,609</span>
+            <span class="text-sm font-medium text-slate-400">hubs</span>
+          </div>
+          <div class="mt-2 text-xs text-slate-400">
+            <span>2,580 active directed edges</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Baseline vs Graph Model Banner -->
+      <div class="bg-gradient-to-r from-delhivery-card via-slate-900 to-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Why Graph Matters</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-950 text-red-300 border border-red-800">Locked Production Model</span>
+            </div>
+            <h3 class="text-base font-bold text-white mt-1">OSRM empty-road assumption collapses in hub-and-spoke networks</h3>
+            <p class="text-xs text-slate-300 mt-0.5 max-w-2xl">
+              By augmenting distance and time with betweenness centrality, PageRank, 8-dim node embeddings, and corridor delay history, the model slashes MAE from 47.9 to 33.6 minutes.
+            </p>
+          </div>
+          <button onclick="switchTab('predictor')" class="px-4 py-2 bg-delhivery-red hover:bg-delhivery-darkred text-white text-xs font-semibold rounded-md shadow flex items-center space-x-1.5 transition">
+            <span>Run New Prediction</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Top 5 Bottleneck Hubs -->
+      <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white">Top 5 Bottleneck Hubs by SLA-Breach Contribution</h3>
+            <p class="text-xs text-slate-400">Click any row to jump to facility drill-down in Bottlenecks & Corridors view.</p>
+          </div>
+          <button onclick="switchTab('bottlenecks')" class="text-xs font-medium text-red-400 hover:text-red-300 flex items-center space-x-1">
+            <span>View All Hubs</span>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto scrollbar-thin">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/60 border-b border-delhivery-border">
+              <tr>
+                <th class="py-3 px-4">Rank</th>
+                <th class="py-3 px-4">Facility Code</th>
+                <th class="py-3 px-4">Facility Name & Hub</th>
+                <th class="py-3 px-4 text-right">Betweenness</th>
+                <th class="py-3 px-4 text-right">PageRank</th>
+                <th class="py-3 px-4 text-right">SLA Breach Contrib.</th>
+                <th class="py-3 px-4 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-top-hubs" class="divide-y divide-delhivery-border">
+              <tr>
+                <td colspan="7" class="py-6 text-center text-slate-500">Loading top bottleneck hubs...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SCREEN 2: ETA PREDICTOR -->
+    <!-- ================================================================= -->
+    <section id="screen-predictor" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Input Form -->
+        <div class="lg:col-span-5 bg-delhivery-card border border-delhivery-border rounded-lg p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-delhivery-border pb-3">
+            <div>
+              <h3 class="text-base font-bold text-white">ETA Predictor Form</h3>
+              <p class="text-xs text-slate-400">Enter hop parameters for graph-enhanced ETA calculation</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">POST /predict</span>
+          </div>
+
+          <!-- Quick Route Presets -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Quick Route Presets</label>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="loadPreset('IND000000ACB', 'IND562132AAA', 2100, 2150, 2145, 'FTL')" class="px-2.5 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                Bilaspur → Nelamangala
+              </button>
+              <button type="button" onclick="loadPreset('IND421302AAG', 'IND411033AAA', 180, 145, 142, 'Carting')" class="px-2.5 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                Bhiwandi → Tathawde
+              </button>
+              <button type="button" onclick="loadPreset('IND000000ACB', 'IND842001AAA', 19.0, 11.96, 10.43, 'Carting')" class="px-2.5 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                PRD Contract Test
+              </button>
+            </div>
+          </div>
+
+          <!-- Source Facility -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Source Facility Code</label>
+            <div class="relative">
+              <input type="text" id="pred-source" list="facility-options" placeholder="e.g. IND000000ACB" value="IND000000ACB" class="w-full bg-slate-900 border border-delhivery-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono">
+            </div>
+            <p id="source-name-hint" class="text-[11px] text-slate-400 mt-0.5 truncate">Gurgaon_Bilaspur_HB (Haryana)</p>
+          </div>
+
+          <!-- Destination Facility -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Destination Facility Code</label>
+            <div class="relative">
+              <input type="text" id="pred-dest" list="facility-options" placeholder="e.g. IND842001AAA" value="IND842001AAA" class="w-full bg-slate-900 border border-delhivery-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono">
+            </div>
+            <p id="dest-name-hint" class="text-[11px] text-slate-400 mt-0.5 truncate">Muzaffarpur_Hub (Bihar)</p>
+          </div>
+
+          <datalist id="facility-options"></datalist>
+
+          <!-- Route Type Toggle -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Route Type</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="btn-carting" onclick="setRouteType('Carting')" class="py-2 text-xs font-semibold rounded border border-red-500 bg-red-950/70 text-white transition">
+                Carting (Feeder)
+              </button>
+              <button type="button" id="btn-ftl" onclick="setRouteType('FTL')" class="py-2 text-xs font-semibold rounded border border-delhivery-border bg-slate-900 text-slate-400 transition hover:bg-slate-800">
+                FTL (Linehaul)
+              </button>
+            </div>
+          </div>
+
+          <!-- Pickup Datetime -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Pickup Date & Time (ISO 8601)</label>
+            <input type="datetime-local" id="pred-datetime" class="w-full bg-slate-900 border border-delhivery-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+          </div>
+
+          <!-- Numeric OSRM Inputs -->
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">OSRM Time (min)</label>
+              <input type="number" step="0.1" id="pred-osrm-time" value="19.0" class="w-full bg-slate-900 border border-delhivery-border rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">OSRM Dist (km)</label>
+              <input type="number" step="0.1" id="pred-osrm-dist" value="11.96" class="w-full bg-slate-900 border border-delhivery-border rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Actual Dist (km)</label>
+              <input type="number" step="0.1" id="pred-actual-dist" value="10.44" class="w-full bg-slate-900 border border-delhivery-border rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-red-500">
+            </div>
+          </div>
+
+          <!-- Predict Button -->
+          <button type="button" onclick="executePredict()" id="btn-submit-predict" class="w-full py-2.5 bg-delhivery-red hover:bg-delhivery-darkred text-white text-xs font-bold rounded shadow flex items-center justify-center space-x-2 transition">
+            <i data-lucide="play" class="w-4 h-4"></i>
+            <span>Calculate Graph-Enhanced ETA</span>
+          </button>
+        </div>
+
+        <!-- Right Column: Result Output & Confidence Assessment -->
+        <div class="lg:col-span-7 space-y-4">
+          <!-- Main Output Card -->
+          <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-6 flex flex-col justify-between min-h-[320px]">
+            <div>
+              <div class="flex items-center justify-between border-b border-delhivery-border pb-3">
+                <span class="text-xs uppercase tracking-wider font-bold text-slate-400">Prediction Output</span>
+                <span id="pred-status-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-400">Awaiting Submission</span>
+              </div>
+
+              <!-- Big Numbers Display -->
+              <div class="py-6 text-center">
+                <div class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">Predicted Actual Delivery Time</div>
+                <div class="flex items-baseline justify-center space-x-3">
+                  <span id="res-predicted-time" class="text-5xl font-black text-white tracking-tight">--</span>
+                  <span class="text-base text-slate-400 font-medium">minutes</span>
+                </div>
+                <div id="res-predicted-hhmm" class="text-sm font-semibold text-slate-300 mt-1">
+                  (--h --m)
+                </div>
+
+                <!-- Secondary Line: OSRM Comparison -->
+                <div class="mt-5 inline-flex items-center space-x-3 px-4 py-2 rounded-full bg-slate-900 border border-delhivery-border">
+                  <span class="text-xs text-slate-400">OSRM Estimate: <strong id="res-osrm-time" class="text-white">-- min</strong></span>
+                  <span class="text-slate-600">|</span>
+                  <span id="res-ratio-badge" class="text-xs font-bold text-slate-300">Ratio: --</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trust / Confidence Badges -->
+            <div class="border-t border-delhivery-border pt-4">
+              <div class="text-xs font-semibold text-slate-300 mb-2">Model Confidence & Topology Signals:</div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div id="badge-source-known" class="p-2 rounded bg-slate-900/80 border border-slate-800 text-center">
+                  <div class="text-[10px] uppercase text-slate-400">Source Facility</div>
+                  <div class="text-xs font-bold text-slate-300 mt-0.5">--</div>
+                </div>
+                <div id="badge-dest-known" class="p-2 rounded bg-slate-900/80 border border-slate-800 text-center">
+                  <div class="text-[10px] uppercase text-slate-400">Destination Facility</div>
+                  <div class="text-xs font-bold text-slate-300 mt-0.5">--</div>
+                </div>
+                <div id="badge-corridor-seen" class="p-2 rounded bg-slate-900/80 border border-slate-800 text-center">
+                  <div class="text-[10px] uppercase text-slate-400">Corridor History</div>
+                  <div class="text-xs font-bold text-slate-300 mt-0.5">--</div>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-2">
+                * Unknown facilities or unseen corridors automatically fall back to network-median graph values. Surfaces flags so dispatchers know when to apply operational buffers.
+              </p>
+            </div>
+          </div>
+
+          <!-- Operational Decision Box -->
+          <div id="prediction-ops-guidance" class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 flex items-center space-x-1.5">
+              <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
+              <span>Dispatcher Recommendation</span>
+            </h4>
+            <p id="pred-guidance-text" class="text-xs text-slate-400 leading-relaxed">
+              Submit a route above to view the graph-informed routing recommendation, delay ratio risk tier, and buffer directives.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SCREEN 3: BOTTLENECK & CORRIDOR MAP -->
+    <!-- ================================================================= -->
+    <section id="screen-bottlenecks" class="hidden space-y-6">
+      
+      <!-- Sub-Navigation for Screen 3 -->
+      <div class="flex items-center justify-between border-b border-delhivery-border pb-3">
+        <div class="flex space-x-3">
+          <button onclick="switchBottleneckSubTab('table-hubs')" id="subnav-hubs" class="px-3 py-1.5 text-xs font-semibold rounded bg-delhivery-red text-white">
+            Facility Bottleneck Ranking
+          </button>
+          <button onclick="switchBottleneckSubTab('table-corridors')" id="subnav-corridors" class="px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700">
+            Chronic Delay Corridors
+          </button>
+          <button onclick="switchBottleneckSubTab('viz-graph')" id="subnav-graph" class="px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center space-x-1">
+            <i data-lucide="network" class="w-3.5 h-3.5"></i>
+            <span>Network Graph Visualizer (v1.1)</span>
+          </button>
+        </div>
+        <div class="relative w-64">
+          <input type="text" id="bottleneck-search-input" onkeyup="handleBottleneckSearch()" placeholder="Search facility / corridor..." class="w-full bg-slate-900 border border-delhivery-border rounded px-3 py-1.5 text-xs text-white focus:outline-none focus:border-red-500 pl-8">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5"></i>
+        </div>
+      </div>
+
+      <!-- Subtab 1: Facilities Table -->
+      <div id="subtab-hubs" class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <div class="flex items-center justify-between mb-3 text-xs">
+          <span class="text-slate-400">Backed by <code class="text-red-400">hub_bottleneck_ranking.csv</code> (1,609 facilities)</span>
+          <span id="hubs-count-label" class="text-slate-400">Showing top 50 records</span>
+        </div>
+        <div class="overflow-x-auto scrollbar-thin max-h-[560px]">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/90 border-b border-delhivery-border sticky top-0 z-10">
+              <tr>
+                <th class="py-2.5 px-3">Node Code</th>
+                <th class="py-2.5 px-3">Facility Name</th>
+                <th class="py-2.5 px-3 text-right cursor-pointer hover:text-white" onclick="sortHubs('betweenness')">Betweenness &#x21C5;</th>
+                <th class="py-2.5 px-3 text-right cursor-pointer hover:text-white" onclick="sortHubs('pagerank')">PageRank &#x21C5;</th>
+                <th class="py-2.5 px-3 text-right">In/Out Deg</th>
+                <th class="py-2.5 px-3 text-right cursor-pointer hover:text-white" onclick="sortHubs('sla_breach_contribution')">SLA Breach Contrib &#x21C5;</th>
+                <th class="py-2.5 px-3 text-center">Predict</th>
+              </tr>
+            </thead>
+            <tbody id="hubs-table-body" class="divide-y divide-delhivery-border font-mono">
+              <tr>
+                <td colspan="7" class="py-6 text-center text-slate-500">Loading facilities...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Subtab 2: Corridors Table -->
+      <div id="subtab-corridors" class="hidden bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <div class="flex items-center justify-between mb-3 text-xs">
+          <span class="text-slate-400">Backed by <code class="text-red-400">chronic_delay_corridors.csv</code> (median delay ratio &gt; 1.20)</span>
+          <span id="corridors-count-label" class="text-slate-400">Showing top 50 records</span>
+        </div>
+        <div class="overflow-x-auto scrollbar-thin max-h-[560px]">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/90 border-b border-delhivery-border sticky top-0 z-10">
+              <tr>
+                <th class="py-2.5 px-3">Source Facility</th>
+                <th class="py-2.5 px-3">Destination Facility</th>
+                <th class="py-2.5 px-3 text-right">Trips</th>
+                <th class="py-2.5 px-3 text-right">OSRM Time</th>
+                <th class="py-2.5 px-3 text-right">Median Delay Ratio</th>
+                <th class="py-2.5 px-3 text-right">SLA Breach Rate</th>
+                <th class="py-2.5 px-3 text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="corridors-table-body" class="divide-y divide-delhivery-border font-mono">
+              <tr>
+                <td colspan="7" class="py-6 text-center text-slate-500">Loading corridors...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Subtab 3: Network Graph Visualization (v1.1) -->
+      <div id="subtab-graph" class="hidden bg-delhivery-card border border-delhivery-border rounded-lg p-5 space-y-3">
+        <div class="flex items-center justify-between text-xs">
+          <div>
+            <h4 class="font-bold text-white text-sm">Interactive Hub Network & Congestion Map</h4>
+            <p class="text-slate-400">Node size represents Betweenness Centrality; Edge color & thickness represent Corridor Delay Ratio.</p>
+          </div>
+          <div class="flex items-center space-x-3 text-[11px]">
+            <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-red-500 inline-block mr-1"></span> Ratio &gt; 2.0x</span>
+            <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-yellow-500 inline-block mr-1"></span> 1.5x - 2.0x</span>
+            <span class="flex items-center"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block mr-1"></span> 1.2x - 1.5x</span>
+          </div>
+        </div>
+        <div id="network-graph-container"></div>
+        <div id="graph-selected-node-info" class="p-3 rounded bg-slate-900 border border-delhivery-border text-xs text-slate-300">
+          Click any node on the graph to inspect centrality, degree, and linked chronic corridors.
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SCREEN 4: FTL VS CARTING ADVISOR -->
+    <!-- ================================================================= -->
+    <section id="screen-advisor" class="hidden space-y-6">
+      
+      <!-- Intro Card -->
+      <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Dispatch Decision Support</span>
+            <h3 class="text-base font-bold text-white mt-0.5">FTL vs. Carting Routing Policy Engine</h3>
+            <p class="text-xs text-slate-300 mt-1 max-w-2xl">
+              Backed by empirical analysis of 26,368 completed hops across distance bands. Shows median delay ratio and SLA breach rate differentials with operational modal recommendations.
+            </p>
+          </div>
+          <span class="text-xs font-mono text-slate-400 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">
+            Source: ftl_vs_carting_by_distance.csv
+          </span>
+        </div>
+
+        <!-- Distance Band Selector Buttons -->
+        <div class="mt-5 grid grid-cols-2 sm:grid-cols-5 gap-2" id="advisor-band-buttons">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Comparison Metrics for Selected Band -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Carting Card -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-delhivery-border pb-2.5">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+              <h4 class="text-sm font-bold text-white">Carting (Feeder / Multi-Drop)</h4>
+            </div>
+            <span id="adv-carting-trips" class="text-xs text-slate-400">-- completed hops</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div class="bg-slate-900/80 p-3 rounded border border-slate-800">
+              <span class="text-[11px] text-slate-400 uppercase tracking-wider">Median Delay Ratio</span>
+              <div id="adv-carting-ratio" class="text-2xl font-black text-amber-400 mt-1">--</div>
+              <span class="text-[10px] text-slate-500">Actual vs OSRM time</span>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded border border-slate-800">
+              <span class="text-[11px] text-slate-400 uppercase tracking-wider">SLA Breach Rate</span>
+              <div id="adv-carting-breach" class="text-2xl font-black text-red-400 mt-1">--</div>
+              <span class="text-[10px] text-slate-500">Hops &gt; 1.20x OSRM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FTL Card -->
+        <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-delhivery-border pb-2.5">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span>
+              <h4 class="text-sm font-bold text-white">FTL (Full Truckload Linehaul)</h4>
+            </div>
+            <span id="adv-ftl-trips" class="text-xs text-slate-400">-- completed hops</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2">
+            <div class="bg-slate-900/80 p-3 rounded border border-slate-800">
+              <span class="text-[11px] text-slate-400 uppercase tracking-wider">Median Delay Ratio</span>
+              <div id="adv-ftl-ratio" class="text-2xl font-black text-blue-400 mt-1">--</div>
+              <span class="text-[10px] text-slate-500">Actual vs OSRM time</span>
+            </div>
+            <div class="bg-slate-900/80 p-3 rounded border border-slate-800">
+              <span class="text-[11px] text-slate-400 uppercase tracking-wider">SLA Breach Rate</span>
+              <div id="adv-ftl-breach" class="text-2xl font-black text-slate-200 mt-1">--</div>
+              <span class="text-[10px] text-slate-500">Hops &gt; 1.20x OSRM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actionable Recommendation Box -->
+      <div class="bg-delhivery-card border border-red-900/50 rounded-lg p-5 bg-gradient-to-r from-red-950/20 to-delhivery-card">
+        <div class="flex items-start space-x-3">
+          <div class="p-2 bg-delhivery-red/20 rounded-md text-red-400 mt-0.5">
+            <i data-lucide="compass" class="w-5 h-5"></i>
+          </div>
+          <div class="flex-1">
+            <span class="text-xs uppercase tracking-wider font-bold text-red-400">One-Line Operational Recommendation</span>
+            <div id="adv-recommendation-text" class="text-sm font-bold text-white mt-1 leading-relaxed">
+              Loading recommendation...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Comparison Table -->
+      <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-5">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">All Distance Bands Summary</h4>
+        <div class="overflow-x-auto scrollbar-thin">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-900/60 border-b border-delhivery-border">
+              <tr>
+                <th class="py-3 px-4">Distance Band</th>
+                <th class="py-3 px-4 text-right">Carting Delay Ratio</th>
+                <th class="py-3 px-4 text-right">Carting SLA Breach</th>
+                <th class="py-3 px-4 text-right">FTL Delay Ratio</th>
+                <th class="py-3 px-4 text-right">FTL SLA Breach</th>
+                <th class="py-3 px-4">Strategic Recommendation</th>
+              </tr>
+            </thead>
+            <tbody id="adv-summary-table-body" class="divide-y divide-delhivery-border">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- SCREEN 5: STRATEGY REPORTS -->
+    <!-- ================================================================= -->
+    <section id="screen-reports" class="hidden space-y-6">
+      <div class="bg-delhivery-card border border-delhivery-border rounded-lg p-6">
+        <div class="flex items-center justify-between border-b border-delhivery-border pb-4 mb-6">
+          <div>
+            <span class="text-xs uppercase tracking-wider font-semibold text-slate-400">Static Operations Memo</span>
+            <h3 class="text-lg font-bold text-white mt-0.5">Network Operations Strategy Memo</h3>
+            <p class="text-xs text-slate-400">Regenerated on each model retrain cycle from <code>Network_Operations_Strategy_Memo.md</code></p>
+          </div>
+          <button onclick="window.print()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded border border-slate-700 flex items-center space-x-1.5 transition">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Print / Save PDF</span>
+          </button>
+        </div>
+
+        <article id="markdown-memo-content" class="prose prose-invert max-w-none text-xs sm:text-sm text-slate-300 space-y-4 leading-relaxed">
+          Loading Strategy Memo...
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-delhivery-border bg-delhivery-black py-4 text-center text-xs text-slate-500">
+    Delhivery Logistics Intelligence &bull; Production Graph-Enhanced Model v1.0 &bull; Fast-Inference Microservice
+  </footer>
+
+  <!-- Frontend Logic -->
+  <script>
+    // State management
+    let state = {
+      activeTab: 'dashboard',
+      selectedRouteType: 'Carting',
+      dashboardData: null,
+      facilities: [],
+      hubs: [],
+      corridors: [],
+      ftlCarting: [],
+      selectedBand: '<50km',
+      hubsSortBy: 'sla_breach_contribution',
+      hubsOrder: 'desc',
+      networkGraph: null
+    };
+
+    // Navigation Switcher
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      const tabs = ['dashboard', 'predictor', 'bottlenecks', 'advisor', 'reports'];
+      tabs.forEach(t => {
+        const el = document.getElementById(`screen-${t}`);
+        const nav = document.getElementById(`nav-${t}`);
+        if (t === tabId) {
+          el.classList.remove('hidden');
+          nav.classList.add('tab-active');
+          nav.classList.remove('text-slate-400');
+          nav.classList.add('text-slate-300');
+        } else {
+          el.classList.add('hidden');
+          nav.classList.remove('tab-active');
+          nav.classList.remove('text-slate-300');
+          nav.classList.add('text-slate-400');
+        }
+      });
+
+      // Special Tab Initializers
+      if (tabId === 'bottlenecks' && !state.networkGraph) {
+        initNetworkGraph();
+      }
+    }
+
+    // Subtabs in Screen 3
+    function switchBottleneckSubTab(subtabId) {
+      ['table-hubs', 'table-corridors', 'viz-graph'].forEach(st => {
+        const btn = document.getElementById(`subnav-${st.replace('table-', '').replace('viz-', '')}`);
+        const pane = document.getElementById(`subtab-${st.replace('table-', '').replace('viz-', '')}`);
+        if (st === subtabId) {
+          pane.classList.remove('hidden');
+          btn.className = "px-3 py-1.5 text-xs font-semibold rounded bg-delhivery-red text-white";
+        } else {
+          pane.classList.add('hidden');
+          btn.className = "px-3 py-1.5 text-xs font-semibold rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        }
+      });
+      if (subtabId === 'viz-graph' && state.networkGraph) {
+        setTimeout(() => state.networkGraph.fit(), 100);
+      }
+    }
+
+    // Route Type Setter in Predictor
+    function setRouteType(type) {
+      state.selectedRouteType = type;
+      const btnCarting = document.getElementById('btn-carting');
+      const btnFtl = document.getElementById('btn-ftl');
+      if (type === 'Carting') {
+        btnCarting.className = "py-2 text-xs font-semibold rounded border border-red-500 bg-red-950/70 text-white transition";
+        btnFtl.className = "py-2 text-xs font-semibold rounded border border-delhivery-border bg-slate-900 text-slate-400 transition hover:bg-slate-800";
+      } else {
+        btnFtl.className = "py-2 text-xs font-semibold rounded border border-red-500 bg-red-950/70 text-white transition";
+        btnCarting.className = "py-2 text-xs font-semibold rounded border border-delhivery-border bg-slate-900 text-slate-400 transition hover:bg-slate-800";
+      }
+    }
+
+    // Preset Loader
+    function loadPreset(src, dst, time, dist, actualDist, routeType) {
+      document.getElementById('pred-source').value = src;
+      document.getElementById('pred-dest').value = dst;
+      document.getElementById('pred-osrm-time').value = time;
+      document.getElementById('pred-osrm-dist').value = dist;
+      document.getElementById('pred-actual-dist').value = actualDist;
+      setRouteType(routeType);
+      updateFacilityHints();
+    }
+
+    function updateFacilityHints() {
+      const src = document.getElementById('pred-source').value.trim();
+      const dst = document.getElementById('pred-dest').value.trim();
+      const fMap = {};
+      state.facilities.forEach(f => { fMap[f.code] = f.name; });
+
+      document.getElementById('source-name-hint').innerText = fMap[src] || 'Facility code ready';
+      document.getElementById('dest-name-hint').innerText = fMap[dst] || 'Facility code ready';
+    }
+
+    document.getElementById('pred-source').addEventListener('input', updateFacilityHints);
+    document.getElementById('pred-dest').addEventListener('input', updateFacilityHints);
+
+    // Initial Data Fetching
+    async function loadInitialData() {
+      try {
+        // Set default pickup datetime to current ISO
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('pred-datetime').value = now.toISOString().slice(0, 16);
+
+        // Fetch Dashboard
+        const dashRes = await fetch('/api/dashboard');
+        const dashData = await dashRes.json();
+        state.dashboardData = dashData;
+        renderDashboard(dashData);
+
+        // Fetch Facilities
+        const facRes = await fetch('/api/facilities?limit=400');
+        const facData = await facRes.json();
+        state.facilities = facData;
+        populateFacilityOptions(facData);
+        updateFacilityHints();
+
+        // Fetch Hubs Table
+        await fetchHubs();
+
+        // Fetch Corridors Table
+        await fetchCorridors();
+
+        // Fetch FTL vs Carting
+        const ftlRes = await fetch('/api/ftl-carting');
+        const ftlData = await ftlRes.json();
+        state.ftlCarting = ftlData;
+        renderFtlCartingAdvisor(ftlData);
+
+        // Fetch Strategy Memo
+        const memoRes = await fetch('/api/strategy-memo');
+        const memoData = await memoRes.json();
+        if (memoData && memoData.markdown) {
+          document.getElementById('markdown-memo-content').innerHTML = marked.parse(memoData.markdown);
+        }
+
+        lucide.createIcons();
+      } catch (err) {
+        console.error('Failed loading platform data:', err);
+      }
+    }
+
+    function renderDashboard(data) {
+      if (!data) return;
+      document.getElementById('kpi-mae').innerText = data.kpi.mae_minutes.toFixed(1);
+      document.getElementById('kpi-within15').innerText = data.kpi.pct_within_15.toFixed(1) + '%';
+      document.getElementById('kpi-chronic').innerText = data.kpi.chronic_delay_corridors_count.toLocaleString();
+      document.getElementById('kpi-facilities').innerText = data.kpi.facilities_monitored.toLocaleString();
+
+      // Freshness Banner
+      const f = data.freshness;
+      const trainedDate = f.trained_at ? f.trained_at.slice(0, 10) : '2026-09-27';
+      document.getElementById('freshness-text').innerText = `Last trained: ${trainedDate} — ${f.n_hops.toLocaleString()} hops`;
+
+      const pDot = document.getElementById('freshness-pulse');
+      const badge = document.getElementById('freshness-badge');
+      if (f.is_stale) {
+        pDot.className = "inline-flex h-2.5 w-2.5 rounded-full bg-red-500 animate-ping";
+        badge.innerHTML = `<span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-red-950/80 text-red-300 border border-red-800/40">Model Stale (&gt;30 days old — retrain due)</span>`;
+      } else {
+        pDot.className = "inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400";
+        badge.innerHTML = `<span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/40">Model Fresh (${f.days_old} days old)</span>`;
+      }
+
+      // Top 5 Hubs
+      const tbody = document.getElementById('dashboard-top-hubs');
+      tbody.innerHTML = '';
+      data.top_bottlenecks.forEach((hub, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/60 cursor-pointer transition";
+        tr.onclick = () => jumpToHubInBottlenecks(hub.node);
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-slate-400">#${idx + 1}</td>
+          <td class="py-3 px-4 font-mono font-semibold text-red-400">${hub.node}</td>
+          <td class="py-3 px-4 font-medium text-white">${hub.facility_name}</td>
+          <td class="py-3 px-4 text-right font-mono text-slate-300">${hub.betweenness.toFixed(4)}</td>
+          <td class="py-3 px-4 text-right font-mono text-slate-300">${hub.pagerank.toFixed(5)}</td>
+          <td class="py-3 px-4 text-right font-mono font-bold text-red-400">${hub.sla_breach_contribution.toFixed(1)}</td>
+          <td class="py-3 px-4 text-center">
+            <span class="text-xs text-red-400 hover:text-red-300 underline font-semibold">Inspect Hub &rarr;</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function populateFacilityOptions(facList) {
+      const datalist = document.getElementById('facility-options');
+      datalist.innerHTML = '';
+      facList.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.code;
+        opt.label = f.label;
+        datalist.appendChild(opt);
+      });
+    }
+
+    function jumpToHubInBottlenecks(hubCode) {
+      switchTab('bottlenecks');
+      switchBottleneckSubTab('table-hubs');
+      const searchBox = document.getElementById('bottleneck-search-input');
+      searchBox.value = hubCode;
+      fetchHubs(hubCode);
+    }
+
+    // ETA Predictor Submission
+    async function executePredict() {
+      const src = document.getElementById('pred-source').value.trim();
+      const dst = document.getElementById('pred-dest').value.trim();
+      const osrmTime = parseFloat(document.getElementById('pred-osrm-time').value);
+      const osrmDist = parseFloat(document.getElementById('pred-osrm-dist').value);
+      const actualDist = parseFloat(document.getElementById('pred-actual-dist').value);
+      const routeType = state.selectedRouteType;
+      const dtInput = document.getElementById('pred-datetime').value;
+      const isoDt = dtInput ? new Date(dtInput).toISOString() : new Date().toISOString();
+
+      const btn = document.getElementById('btn-submit-predict');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Querying Graph Model...</span>`;
+      lucide.createIcons();
+
+      try {
+        const payload = {
+          source_center: src,
+          destination_center: dst,
+          osrm_time: osrmTime,
+          osrm_distance: osrmDist,
+          actual_distance_to_destination: actualDist,
+          route_type: routeType,
+          pickup_datetime: isoDt
+        };
+
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          alert('Prediction failed: ' + (err.detail || 'Invalid inputs'));
+          return;
+        }
+
+        const data = await res.json();
+        renderPredictionResult(data, payload);
+      } catch (err) {
+        alert('Prediction request error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i><span>Calculate Graph-Enhanced ETA</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function renderPredictionResult(data, req) {
+      const predMin = data.predicted_actual_time_minutes;
+      const osrmMin = data.osrm_time_minutes;
+      const ratio = data.predicted_vs_osrm_ratio;
+
+      // Predicted Time
+      document.getElementById('res-predicted-time').innerText = predMin.toFixed(1);
+      const hours = Math.floor(predMin / 60);
+      const mins = Math.round(predMin % 60);
+      document.getElementById('res-predicted-hhmm').innerText = `(${hours}h ${mins}m transit time)`;
+
+      // OSRM Comparison
+      document.getElementById('res-osrm-time').innerText = `${osrmMin.toFixed(1)} min`;
+      const ratioBadge = document.getElementById('res-ratio-badge');
+      const pctDiff = Math.round((ratio - 1) * 100);
+      if (pctDiff > 0) {
+        ratioBadge.innerText = `${pctDiff}% longer than OSRM (${ratio.toFixed(2)}x)`;
+        ratioBadge.className = "text-xs font-bold text-red-400";
+      } else {
+        ratioBadge.innerText = `${Math.abs(pctDiff)}% faster than OSRM (${ratio.toFixed(2)}x)`;
+        ratioBadge.className = "text-xs font-bold text-emerald-400";
+      }
+
+      document.getElementById('pred-status-badge').className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800";
+      document.getElementById('pred-status-badge').innerText = "Prediction Successful";
+
+      // Badges
+      updateBadge('badge-source-known', data.source_known_facility, 'Source');
+      updateBadge('badge-dest-known', data.destination_known_facility, 'Dest');
+      updateBadge('badge-corridor-seen', data.corridor_seen_in_training, 'Corridor');
+
+      // Dispatch Guidance
+      const guidance = document.getElementById('pred-guidance-text');
+      if (ratio > 1.4) {
+        guidance.innerHTML = `<span class="text-red-400 font-bold">Severe Corridor Friction Alert:</span> Real delivery time is projected at <strong>${ratio.toFixed(2)}x OSRM baseline</strong>. This corridor experiences recurring hub staging delays. Schedule downstream sorting cutoff at <strong>+${(predMin - osrmMin).toFixed(0)} min</strong> beyond standard OSRM ETA.`;
+      } else if (ratio > 1.15) {
+        guidance.innerHTML = `<span class="text-amber-400 font-bold">Moderate Operational Buffer:</span> Transit time exceeds empty-road OSRM by <strong>${pctDiff}%</strong>. Recommended for standard SLA scheduling.`;
+      } else {
+        guidance.innerHTML = `<span class="text-emerald-400 font-bold">Free-Flow Corridor:</span> Predicted time closely tracks OSRM estimate (${ratio.toFixed(2)}x). High confidence on-time delivery commitment.`;
+      }
+    }
+
+    function updateBadge(elementId, isKnown, prefix) {
+      const el = document.getElementById(elementId);
+      if (isKnown) {
+        el.className = "p-2 rounded bg-emerald-950/40 border border-emerald-800/60 text-center";
+        el.children[1].className = "text-xs font-bold text-emerald-400 mt-0.5";
+        el.children[1].innerText = "Known / Trained";
+      } else {
+        el.className = "p-2 rounded bg-amber-950/40 border border-amber-800/60 text-center";
+        el.children[1].className = "text-xs font-bold text-amber-400 mt-0.5";
+        el.children[1].innerText = "New (Fallback Used)";
+      }
+    }
+
+    // Screen 3 Hubs and Corridors Fetchers
+    async function fetchHubs(searchQuery = '') {
+      const res = await fetch(`/api/hubs?search=${encodeURIComponent(searchQuery)}&sort_by=${state.hubsSortBy}&order=${state.hubsOrder}&limit=100`);
+      const data = await res.json();
+      state.hubs = data.hubs;
+      document.getElementById('hubs-count-label').innerText = `Showing ${data.hubs.length} of ${data.total} facilities`;
+
+      const tbody = document.getElementById('hubs-table-body');
+      tbody.innerHTML = '';
+      data.hubs.forEach(h => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/60 transition";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-red-400">${h.node}</td>
+          <td class="py-2.5 px-3 text-slate-200 font-sans">${h.facility_name}</td>
+          <td class="py-2.5 px-3 text-right text-slate-300">${h.betweenness.toFixed(4)}</td>
+          <td class="py-2.5 px-3 text-right text-slate-300">${h.pagerank.toFixed(5)}</td>
+          <td class="py-2.5 px-3 text-right text-slate-400">${h.in_degree}/${h.out_degree}</td>
+          <td class="py-2.5 px-3 text-right font-bold ${h.sla_breach_contribution > 100 ? 'text-red-400' : 'text-slate-300'}">${h.sla_breach_contribution.toFixed(1)}</td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="prefillPredictorFromHub('${h.node}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-red-900 text-slate-300 text-[10px] font-sans font-semibold">Use &rarr;</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function sortHubs(col) {
+      if (state.hubsSortBy === col) {
+        state.hubsOrder = state.hubsOrder === 'desc' ? 'asc' : 'desc';
+      } else {
+        state.hubsSortBy = col;
+        state.hubsOrder = 'desc';
+      }
+      const s = document.getElementById('bottleneck-search-input').value.trim();
+      fetchHubs(s);
+    }
+
+    async function fetchCorridors(searchQuery = '') {
+      const res = await fetch(`/api/corridors?search=${encodeURIComponent(searchQuery)}&limit=100`);
+      const data = await res.json();
+      state.corridors = data.corridors;
+      document.getElementById('corridors-count-label').innerText = `Showing ${data.corridors.length} of ${data.total} chronic delay corridors`;
+
+      const tbody = document.getElementById('corridors-table-body');
+      tbody.innerHTML = '';
+      data.corridors.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/60 transition";
+        tr.innerHTML = `
+          <td class="py-2.5 px-3">
+            <div class="font-bold text-slate-200">${c.source_center}</div>
+            <div class="text-[10px] text-slate-400 font-sans truncate max-w-xs">${c.source_name}</div>
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="font-bold text-slate-200">${c.destination_center}</div>
+            <div class="text-[10px] text-slate-400 font-sans truncate max-w-xs">${c.destination_name}</div>
+          </td>
+          <td class="py-2.5 px-3 text-right text-slate-300">${c.trips}</td>
+          <td class="py-2.5 px-3 text-right text-slate-400">${c.median_osrm_time}m</td>
+          <td class="py-2.5 px-3 text-right">
+            <span class="px-2 py-0.5 rounded text-xs font-bold metric-badge-breach">${c.median_delay_ratio.toFixed(2)}x</span>
+          </td>
+          <td class="py-2.5 px-3 text-right text-slate-300">${(c.sla_breach_rate * 100).toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-center">
+            <button onclick="prefillPredictorCorridor('${c.source_center}', '${c.destination_center}', ${c.median_osrm_time})" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-red-900 text-slate-300 text-[10px] font-sans font-semibold">Test Lane</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleBottleneckSearch() {
+      const q = document.getElementById('bottleneck-search-input').value.trim();
+      fetchHubs(q);
+      fetchCorridors(q);
+    }
+
+    function prefillPredictorFromHub(hub) {
+      document.getElementById('pred-source').value = hub;
+      switchTab('predictor');
+      updateFacilityHints();
+    }
+
+    function prefillPredictorCorridor(src, dst, osrmTime) {
+      document.getElementById('pred-source').value = src;
+      document.getElementById('pred-dest').value = dst;
+      document.getElementById('pred-osrm-time').value = osrmTime > 0 ? osrmTime : 25.0;
+      switchTab('predictor');
+      updateFacilityHints();
+    }
+
+    // Screen 3 Network Graph Visualizer
+    async function initNetworkGraph() {
+      const container = document.getElementById('network-graph-container');
+      const res = await fetch('/api/network-graph?top_n_hubs=35');
+      const data = await res.json();
+
+      const nodes = new vis.DataSet(data.nodes.map(n => ({
+        id: n.id,
+        label: `${n.name.split('_')[0]}\n(${n.id.slice(-6)})`,
+        title: `${n.name} [${n.id}]\nBetweenness: ${n.betweenness.toFixed(4)}\nPageRank: ${n.pagerank.toFixed(5)}\nSLA Breach Contribution: ${n.breach_contrib.toFixed(1)}`,
+        value: Math.max(5, n.betweenness * 180 + 10),
+        color: {
+          background: n.breach_contrib > 900 ? '#E31837' : '#3b82f6',
+          border: '#ffffff'
+        },
+        font: { color: '#ffffff', size: 10 }
+      })));
+
+      const edges = new vis.DataSet(data.links.map(l => ({
+        from: l.source,
+        to: l.target,
+        value: l.delay_ratio,
+        color: {
+          color: l.delay_ratio > 2.0 ? '#EF4444' : (l.delay_ratio > 1.5 ? '#F59E0B' : '#3B82F6')
+        },
+        arrows: 'to',
+        title: `Corridor: ${l.source} -> ${l.target}\nDelay Ratio: ${l.delay_ratio.toFixed(2)}x\nTrips: ${l.trips}`
+      })));
+
+      const options = {
+        nodes: { shape: 'dot' },
+        physics: {
+          stabilization: false,
+          barnesHut: { gravitationalConstant: -3000, springLength: 95 }
+        },
+        interaction: { hover: true }
+      };
+
+      state.networkGraph = new vis.Network(container, { nodes, edges }, options);
+      state.networkGraph.on("click", function (params) {
+        if (params.nodes.length > 0) {
+          const clickedNodeId = params.nodes[0];
+          const nodeObj = data.nodes.find(n => n.id === clickedNodeId);
+          if (nodeObj) {
+            document.getElementById('graph-selected-node-info').innerHTML = `
+              <strong>Selected Hub:</strong> ${nodeObj.name} (<code>${nodeObj.id}</code>) &bull;
+              Betweenness: <strong>${nodeObj.betweenness.toFixed(4)}</strong> &bull;
+              PageRank: <strong>${nodeObj.pagerank.toFixed(5)}</strong> &bull;
+              Breach Contribution: <strong class="text-red-400">${nodeObj.breach_contrib.toFixed(1)}</strong>
+              <button onclick="prefillPredictorFromHub('${nodeObj.id}')" class="ml-3 px-2 py-0.5 rounded bg-delhivery-red text-white text-[11px]">Use as Source &rarr;</button>
+            `;
+          }
+        }
+      });
+    }
+
+    // Screen 4 FTL vs Carting Advisor
+    function renderFtlCartingAdvisor(bands) {
+      if (!bands || !bands.length) return;
+
+      const btnContainer = document.getElementById('advisor-band-buttons');
+      btnContainer.innerHTML = '';
+
+      bands.forEach(b => {
+        const btn = document.createElement('button');
+        btn.id = `band-btn-${b.distance_band.replace(/[^a-zA-Z0-9]/g, '')}`;
+        btn.onclick = () => selectDistanceBand(b.distance_band);
+        btn.className = b.distance_band === state.selectedBand
+          ? "py-2 px-3 text-xs font-bold rounded bg-delhivery-red text-white"
+          : "py-2 px-3 text-xs font-medium rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        btn.innerText = b.distance_band;
+        btnContainer.appendChild(btn);
+      });
+
+      selectDistanceBand(state.selectedBand);
+
+      // Summary Table
+      const tbody = document.getElementById('adv-summary-table-body');
+      tbody.innerHTML = '';
+      bands.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/60 transition cursor-pointer";
+        tr.onclick = () => selectDistanceBand(b.distance_band);
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-white">${b.distance_band}</td>
+          <td class="py-3 px-4 text-right font-mono ${b.carting_median_delay_ratio > 1.2 ? 'text-amber-400 font-bold' : 'text-slate-300'}">${b.carting_trips > 0 ? b.carting_median_delay_ratio.toFixed(2) + 'x' : 'N/A'}</td>
+          <td class="py-3 px-4 text-right font-mono text-slate-300">${b.carting_trips > 0 ? (b.carting_sla_breach_rate * 100).toFixed(1) + '%' : 'N/A'}</td>
+          <td class="py-3 px-4 text-right font-mono ${b.ftl_median_delay_ratio > 1.2 ? 'text-blue-400 font-bold' : 'text-slate-300'}">${b.ftl_trips > 0 ? b.ftl_median_delay_ratio.toFixed(2) + 'x' : 'N/A'}</td>
+          <td class="py-3 px-4 text-right font-mono text-slate-300">${b.ftl_trips > 0 ? (b.ftl_sla_breach_rate * 100).toFixed(1) + '%' : 'N/A'}</td>
+          <td class="py-3 px-4 text-slate-300 font-medium">${b.recommendation}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectDistanceBand(bandName) {
+      state.selectedBand = bandName;
+      const row = state.ftlCarting.find(r => r.distance_band === bandName);
+      if (!row) return;
+
+      // Update Button Styles
+      state.ftlCarting.forEach(b => {
+        const bId = `band-btn-${b.distance_band.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const btn = document.getElementById(bId);
+        if (btn) {
+          btn.className = b.distance_band === bandName
+            ? "py-2 px-3 text-xs font-bold rounded bg-delhivery-red text-white"
+            : "py-2 px-3 text-xs font-medium rounded bg-slate-800 text-slate-300 hover:bg-slate-700";
+        }
+      });
+
+      // Update Cards
+      document.getElementById('adv-carting-trips').innerText = `${row.carting_trips.toLocaleString()} historical trips`;
+      document.getElementById('adv-carting-ratio').innerText = row.carting_trips > 0 ? `${row.carting_median_delay_ratio.toFixed(2)}x` : 'N/A';
+      document.getElementById('adv-carting-breach').innerText = row.carting_trips > 0 ? `${(row.carting_sla_breach_rate * 100).toFixed(1)}%` : 'N/A';
+
+      document.getElementById('adv-ftl-trips').innerText = `${row.ftl_trips.toLocaleString()} historical trips`;
+      document.getElementById('adv-ftl-ratio').innerText = row.ftl_trips > 0 ? `${row.ftl_median_delay_ratio.toFixed(2)}x` : 'N/A';
+      document.getElementById('adv-ftl-breach').innerText = row.ftl_trips > 0 ? `${(row.ftl_sla_breach_rate * 100).toFixed(1)}%` : 'N/A';
+
+      document.getElementById('adv-recommendation-text').innerText = row.recommendation;
+    }
+
+    // Launch on DOM ready
+    window.addEventListener('DOMContentLoaded', loadInitialData);
+  </script>
+</body>
+</html>

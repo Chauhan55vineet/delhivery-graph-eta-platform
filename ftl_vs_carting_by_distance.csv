@@ -1,0 +1,6 @@
+distance_band,carting_trips,carting_median_delay_ratio,carting_sla_breach_rate,ftl_trips,ftl_median_delay_ratio,ftl_sla_breach_rate,recommendation
+<50km,11136,2.15,0.943,6334,1.84,0.917,Under 50km: Severe Carting congestion (median delay ratio 2.15 vs 1.84 FTL). Shift short-haul Carting volume to direct FTL shuttle routes where density permits.
+50–150km,1275,2.09,0.976,4728,2.0,0.959,50–150km: Shift Carting volume to FTL where feasible to bypass intermediary transshipment touches and cut SLA breaches from 97.6% to 95.9%.
+150–400km,18,1.97,1.0,1802,1.93,0.997,150–400km: Selective routing — deploy dedicated FTL for time-critical express lanes (1.93 delay ratio) and consolidate Carting into multi-drop feeder loops.
+400–1000km,0,1.0,0.0,521,1.94,1.0,400–1000km: Direct linehaul corridor — route 100% via FTL linehaul with scheduled hub departures to eliminate intra-city staging delays.
+1000km+,0,1.0,0.0,554,1.95,1.0,1000km+: Long-haul trunk routes — FTL with dual-driver rotation and mandatory relay checkpoints at intermediate bottleneck hubs.
